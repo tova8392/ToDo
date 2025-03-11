@@ -1,0 +1,44 @@
+# Build Folders
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider files
+.idea/
+
+# Visual Studio Code files
+.vscode/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+!**/packages/build/**/lib/netstandard2.0/*.dll
+!**/packages/build/**/lib/netcoreapp3.1/*.dll
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Publish folder
+publish/
+
+# Other files to ignore
+*.db
+*.pdb
+*.mdb
+*.exe
+*.dll
+*.cache
+*.dSYM/
+
