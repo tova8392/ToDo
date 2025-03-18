@@ -8,7 +8,7 @@ ENV ASPNETCORE_URLS=http://+:80
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-preview AS build
 ARG configuration=Release
 WORKDIR /src
-COPY ["Sarver/TodoApi.csproj", "Sarver/"]
+COPY ["/TodoApi.csproj", "/"]
 RUN dotnet restore "Sarver/TodoApi.csproj"
 COPY . .
 WORKDIR "/src/Sarver"
