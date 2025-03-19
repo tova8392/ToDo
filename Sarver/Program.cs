@@ -14,10 +14,12 @@ builder.Services.AddDbContext<ToDoDbContext>(options =>
 // הגדרת CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin",
-        policy => policy.WithOrigins("http://localhost:3000")
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
+    options.AddPolicy("AllowAllOrigins", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 // הוספת Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -26,7 +28,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // הפעלת CORS
-app.UseCors("AllowSpecificOrigin");
+app.UseCors("AllowAllOrigins");
 
 // הפעלת Swagger רק במצב פיתוח
 if (app.Environment.IsDevelopment())
