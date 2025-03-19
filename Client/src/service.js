@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiUrl = "http://localhost:5018";
+const apiUrl = "https://server-sdrq.onrender.com";
 
 const service = {
   // שליפת כל המשימות
