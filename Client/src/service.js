@@ -1,61 +1,49 @@
 import axios from 'axios';
-
 const apiUrl = "https://server-sdrq.onrender.com";
 
-const service = {
-  // שליפת כל המשימות
+axios.defaults.baseURL = apiUrl;
+
+export default {
   getTasks: async () => {
     try {
-      const result = await axios.get(`${apiUrl}/`); // עדכון לכתובת נכונה
+      const result = await axios.get(`selectAll`)
       return result.data;
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      return [];
+    } catch (err) {
+      console.error('Error getting tasks:', err);
     }
   },
 
-  // הוספת משימה חדשה
   addTask: async (name) => {
-    if (!name) {
-      console.error('Task name is required!');
-      return null;
-    }
+    console.log('addTask', name)
     try {
-      const result = await axios.post(`${apiUrl}/addItem`, { name, isComplete: false }); // שונה מ- /items ל- /addItem
-      console.log('Task added:', result.data);
+      const result = await axios.post(`add?Name=${encodeURIComponent(name)}`);
       return result.data;
-    } catch (error) {
-      console.error('Error adding task:', error);
-      return null;
+    } catch (err) {
+      console.error('Error adding task:', err);
     }
   },
 
-// עדכון סטטוס משימה (השלמה / לא הושלמה)
-setCompleted: async (id, isComplete) => {
-  try{
-    const response = await axios.put(`${apiUrl}/updateItem/${id}`,{
-      isComplete:isComplete
-    });
-    console.log('Task updated:', response.data);
-    return response.data;
-  }catch(error){
-    console.error('Error updating task:', error);
-  }
-},
-
-  // מחיקת משימה לפי ID
-  deleteTask: async (id) => {
+  setCompleted: async (id, isComplete) => {
+    console.log('setCompleted', { id, isComplete });
     try {
-      const result = await axios.delete(`${apiUrl}/removeItem/${id}`); // שונה מ- /items/{id} ל- /removeItem/{id}
-      console.log('Task deleted:', result.data);
+      const result = await axios.patch(`update/${id}`, isComplete, {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });      return result.data;
+    } catch (err) {
+      console.error('Error setting completion:', err);
+    }
+  },
+
+  deleteTask: async (id) => {
+    console.log('deleteTask', id);
+    try {
+      const result = await axios.delete(`/delete/${id}`);
       return result.data;
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      return null;
+    } catch (err) {
+      console.error('Error deleting task:', err);
     }
   }
+
 };
-
-export default service;
-//אפיון של המערכת אני רוצה שכל אחד ירותץ לי בנפרד לכן אנ עושה את זה 
-
