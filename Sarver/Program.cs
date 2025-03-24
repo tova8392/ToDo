@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using TodoApi;
+using Microsoft.EntityFrameworkCore;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+
 // using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ToDoDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("ToDoDB"),
-        new MySqlServerVersion(new Version(8, 0, 21))
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("ToDoDB"))
     ));
 
 // הגדרת CORS
