@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
+using Microsoft.Extensions.Configuration;
 
 namespace TodoApi;
 
@@ -17,11 +18,21 @@ public partial class ToDoDbContext : DbContext
     }
 
     public virtual DbSet<Item> Items { get; set; }
-    //public virtual DbSet<User> Users { get; set; } // הוספת טבלת המשתמשים
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=bzlpkxtzud8vnfdbhapw-mysql.services.clever-cloud.com;user=uprcoph3cmp8nnd3;password=UgjZ9UZodpuInl6tflnT;database=bzlpkxtzud8vnfdbhapw", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.41-mysql"));
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            var connectionString = configuration.GetConnectionString("ToDoDB");
+            optionsBuilder.UseMySql(connectionString, Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.41-mysql"));
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,11 +48,8 @@ public partial class ToDoDbContext : DbContext
 
             entity.Property(e => e.Name).HasMaxLength(100);
         });
-
         OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
-
-
