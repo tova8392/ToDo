@@ -28,14 +28,6 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// הוספת CSP Middleware
-app.Use(async (context, next) =>
-{
-    // הוספת כותרת CSP לכל בקשה
-    context.Response.Headers.Add("Content-Security-Policy", "script-src 'self' 'unsafe-inline';");
-    await next();
-});
-
 // הפעלת CORS
 app.UseCors("AllowAllOrigins");
 
@@ -93,3 +85,4 @@ app.MapDelete("/removeItem/{id}", async (ToDoDbContext db, int id) =>
     .WithTags("Items");
 
 app.Run();
+
