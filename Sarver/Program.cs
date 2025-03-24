@@ -1,88 +1,91 @@
-using Microsoft.EntityFrameworkCore;
 using TodoApi;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// הוספת חיבור למסד נתונים
-builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("ToDoDB"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("ToDoDB"))
-    ));
-
-// הגדרת CORS
-builder.Services.AddCors(options =>
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";  
+builder.WebHost.ConfigureKestrel(options =>
 {
-    options.AddPolicy("AllowAllOrigins", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.ListenAnyIP(int.Parse(port)); 
 });
 
-// הוספת Swagger
+// הוספת ה-DbContext עם חיבור ל-MySQL
+builder.Services.AddDbContext<ToDoDbContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"), 
+    new MySqlServerVersion(new Version(8, 0, 41)),
+    mySqlOptions => mySqlOptions.EnableRetryOnFailure()));
+
+// הוספת ה-CORS לפני קריאת builder.Build()
+builder.Services.AddCors(option => option.AddPolicy("AllowAll", //נתינת שם להרשאה
+    p => p.AllowAnyOrigin() //מאפשר כל מקור
+    .AllowAnyMethod() //כל מתודה - פונקציה
+    .AllowAnyHeader())); //וכל כותרת פונקציה
+
+builder.Logging.AddConsole();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+});
 
 var app = builder.Build();
 
-// הפעלת CORS
-app.UseCors("AllowAllOrigins");
-
-// הפעלת Swagger רק במצב פיתוח
-if (app.Environment.IsDevelopment())
+// בדיקת חיבור למסד הנתונים
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ToDoDbContext>();
+    try
+    {
+        dbContext.Database.OpenConnection();
+        Console.WriteLine("✅ הצלחנו להתחבר למסד הנתונים!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ חיבור למסד הנתונים נכשל: {ex.Message}");
+    }
 }
 
-// Routes
-app.MapGet("/", async (ToDoDbContext db) => await db.Items.ToListAsync())
-    .WithName("GetAllItems")
-    .WithTags("Items");
+app.UseCors("AllowAll");
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.MapGet("/{id}", async (ToDoDbContext db, int id) =>
+app.MapGet("/", () => "ToDoApi is running!");
+app.MapGet("/selectAll", async (ToDoDbContext db) =>
 {
-    var item = await db.Items.FirstOrDefaultAsync(x => x.Id == id);
-    return item != null ? Results.Ok(item) : Results.NotFound();
-})
-    .WithName("GetItemById")
-    .WithTags("Items");
-
-app.MapPost("/addItem", async (ToDoDbContext db, Item item) =>
+    return await db.Items.ToListAsync();
+});
+app.MapPost("/add", async (ToDoDbContext db, string Name) =>
 {
-    db.Items.Add(item);
+    var item = new Item { Name = Name, IsComplete = false };
+    await db.Items.AddAsync(item);
     await db.SaveChangesAsync();
-    return Results.Created($"/addItem/{item.Id}", item);
-})
-    .WithName("AddItem")
-    .WithTags("Items");
+    return "Item added";
+});
 
-app.MapPut("/updateItem/{id}", async (ToDoDbContext db, int id, Item item) =>
+app.MapPatch("/update/{id}", async (ToDoDbContext db, int id, [FromBody] bool IsComplete) =>
 {
-    var i = await db.Items.FindAsync(id);
-    if (i == null) return Results.NotFound();
-    
-    i.IsComplete = item.IsComplete;
+    var existingItem = await db.Items.FindAsync(id);
+    if (existingItem == null)
+    {
+        return Results.NotFound();
+    }
+    existingItem.IsComplete = IsComplete;
     await db.SaveChangesAsync();
-    return Results.Ok(i);
-})
-    .WithName("UpdateItem")
-    .WithTags("Items");
+    return Results.Ok("Item updated");
+});
 
-app.MapDelete("/removeItem/{id}", async (ToDoDbContext db, int id) =>
+app.MapDelete("/delete/{id}", async (ToDoDbContext db, int id) =>
 {
-    var item = await db.Items.FirstOrDefaultAsync(x => x.Id == id);
-    if (item == null) return Results.NotFound();
-    
-    db.Items.Remove(item);
+    var itemToDelete = await db.Items.FindAsync(id);
+    if (itemToDelete == null)
+    {
+        return Results.NotFound();
+    }
+    db.Items.Remove(itemToDelete);
     await db.SaveChangesAsync();
-    return Results.NoContent();
-})
-    .WithName("DeleteItem")
-    .WithTags("Items");
+    return Results.Ok("Item deleted");
+});
 
 app.Run();
-
